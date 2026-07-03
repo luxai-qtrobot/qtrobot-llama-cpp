@@ -1,0 +1,13 @@
+[Unit]
+Description=QTrobot LLM Server (llama.cpp)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/luxai/qtrobot_llama_cpp/bin/run-server.sh
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

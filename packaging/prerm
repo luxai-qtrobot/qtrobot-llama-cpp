@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+
+systemctl stop qtrobot-llama-cpp.service || true
+systemctl disable qtrobot-llama-cpp.service || true
+
+exit 0
