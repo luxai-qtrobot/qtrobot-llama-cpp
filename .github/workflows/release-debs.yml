@@ -1,0 +1,37 @@
+name: Release DEBs
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-debs:
+    name: Build DEBs
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build .deb (arm64)
+        run: |
+          ARCH=arm64 bash packaging/build-deb.sh packaging/dist
+
+      - name: Upload DEBs as workflow artifacts (always)
+        uses: actions/upload-artifact@v4
+        with:
+          name: debs-arm64
+          path: packaging/dist/*.deb
+          if-no-files-found: error
+
+      - name: Upload DEBs to GitHub Release (tag builds only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packaging/dist/*.deb
+          fail_on_unmatched_files: true

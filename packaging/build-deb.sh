@@ -14,7 +14,7 @@ OUTPUT_DIR="${1:-${SCRIPT_DIR}/dist}"
 
 PKG_NAME="qtrobot-llama-cpp"
 VERSION="1.0.0"
-ARCH="$(dpkg --print-architecture)"
+ARCH="${ARCH:-$(dpkg --print-architecture)}"
 DEB_NAME="${PKG_NAME}_${VERSION}_${ARCH}.deb"
 
 PREFIX="/opt/luxai/qtrobot_llama_cpp"
