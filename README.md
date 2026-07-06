@@ -1,10 +1,9 @@
 # qtrobot-llama-cpp
 
 Systemd service package that runs `llama-server` (OpenAI-compatible HTTP API)
-on QTrobot's Jetson AGX Orin. Ships a sensible default configuration and
-downloads the default model automatically on first install.
+on QTrobot's Jetson AGX Orin. Models are downloaded automatically on first start.
 
-Default model: **Gemma-4-12B-Instruct Q8\_0** + MTP draft model (~13 GB + ~1 GB)
+Default model: **Gemma-4-12B-Instruct Q8\_0** + MTP draft (~13 GB + ~1 GB)
 
 ## Prerequisites
 
@@ -20,31 +19,49 @@ sudo apt-get install -f
 ```bash
 cd qtrobot-llama-cpp
 bash packaging/build-deb.sh
-# produces: packaging/dist/qtrobot-llama-cpp_1.0.0_arm64.deb
+# produces: packaging/dist/qtrobot-llama-cpp_1.0.2_arm64.deb
 ```
 
 ## Install
 
 ```bash
-sudo dpkg -i packaging/dist/qtrobot-llama-cpp_1.0.0_arm64.deb
+sudo dpkg -i packaging/dist/qtrobot-llama-cpp_1.0.2_arm64.deb
 ```
 
-`postinst` will:
-1. Download `gemma-4-12B-it-Q4_K_M.gguf` to `/opt/luxai/qtrobot_llama_cpp/models/` (if not already present)
-2. Enable and start the `qtrobot-llama-cpp` systemd service
+The package installs instantly. On first start, the service downloads the
+configured models automatically before launching `llama-server`. Watch progress:
 
-> If your Jetson has no internet access at install time, download both model files
-> manually into `/opt/luxai/qtrobot_llama_cpp/models/` before starting the service:
-> - `gemma-4-12B-it-Q8_0.gguf`
-> - `mtp-gemma-4-12B-it-Q8_0.gguf`
+```bash
+sudo journalctl -u qtrobot-llama-cpp -f
+```
+
+If a download fails (network issue etc.), the service exits and systemd retries
+after 5 seconds. To stop the retry loop: `sudo systemctl stop qtrobot-llama-cpp`.
+
+> To pre-place models manually (e.g. no internet on the robot), copy them into
+> `/opt/luxai/qtrobot_llama_cpp/models/` before starting the service — the
+> download step is skipped if the file already exists.
 
 ## Configuration
 
-Edit `/opt/luxai/qtrobot_llama_cpp/etc/server.env` to tune any parameter:
+Edit `/opt/luxai/qtrobot_llama_cpp/etc/server.env` and restart the service to apply:
+
+```bash
+sudo systemctl restart qtrobot-llama-cpp
+```
 
 ```env
-LLAMA_MODEL=/opt/luxai/qtrobot_llama_cpp/models/gemma-4-12B-it-Q8_0.gguf
-LLAMA_DRAFT_MODEL=/opt/luxai/qtrobot_llama_cpp/models/mtp-gemma-4-12B-it-Q8_0.gguf
+# Model directory
+LLAMA_MODEL_DIR=/opt/luxai/qtrobot_llama_cpp/models
+
+# Main model — filename only, relative to LLAMA_MODEL_DIR
+LLAMA_MODEL=gemma-4-12B-it-Q8_0.gguf
+LLAMA_MODEL_URL=https://huggingface.co/bartowski/gemma-4-12B-it-GGUF/resolve/main/gemma-4-12B-it-Q8_0.gguf
+
+# Draft model for speculative decoding — leave empty to disable
+LLAMA_DRAFT_MODEL=mtp-gemma-4-12B-it-Q8_0.gguf
+LLAMA_DRAFT_MODEL_URL=https://huggingface.co/bartowski/gemma-4-12B-it-GGUF/resolve/main/mtp-gemma-4-12B-it-Q8_0.gguf
+
 LLAMA_HOST=0.0.0.0
 LLAMA_PORT=8080
 LLAMA_N_GPU_LAYERS=999
@@ -52,20 +69,18 @@ LLAMA_CTX_SIZE=4096
 LLAMA_THREADS=8
 LLAMA_BATCH_THREADS=8
 LLAMA_REVERSE_PROMPT=<turn|>
-LLAMA_WEBUI=true   # set to false to disable the built-in web UI
+
+# Set to false to disable the built-in web UI
+LLAMA_WEBUI=true
 ```
 
-Apply changes:
+**To switch models:** update `LLAMA_MODEL`, `LLAMA_MODEL_URL`, and restart.
+The new model will be downloaded automatically on next start if not already present.
 
-```bash
-sudo systemctl restart qtrobot-llama-cpp
-```
-
-To use a different model, update `LLAMA_MODEL` and restart.
+**To disable speculative decoding:** clear `LLAMA_DRAFT_MODEL=` and restart.
+The `--model-draft` flag is omitted entirely when the draft model is unset.
 
 ## Usage
-
-Check service status and logs:
 
 ```bash
 sudo systemctl status qtrobot-llama-cpp
@@ -87,7 +102,8 @@ curl http://localhost:8080/v1/chat/completions \
   }'
 ```
 
-From another machine on the same network, replace `localhost` with the robot's IP.
+Replace `localhost` with the robot's IP to reach it from another machine.
+The built-in web UI is available at `http://<robot-ip>:8080` when `LLAMA_WEBUI=true`.
 
 ## Uninstall
 
@@ -95,5 +111,5 @@ From another machine on the same network, replace `localhost` with the robot's I
 sudo apt-get remove qtrobot-llama-cpp
 ```
 
-The model files under `/opt/luxai/qtrobot_llama_cpp/models/` are **not** removed
+Model files under `/opt/luxai/qtrobot_llama_cpp/models/` are **not** removed
 automatically — delete them manually if no longer needed.
