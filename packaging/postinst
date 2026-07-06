@@ -1,31 +1,7 @@
 #!/bin/sh
 set -e
 
-MODEL_DIR="/opt/luxai/qtrobot_llama_cpp/models"
-MODEL_FILE="${MODEL_DIR}/gemma-4-12B-it-Q4_K_M.gguf"
-MODEL_URL="https://huggingface.co/bartowski/gemma-4-12B-it-GGUF/resolve/main/gemma-4-12B-it-Q4_K_M.gguf"
-
-mkdir -p "${MODEL_DIR}"
-
-download_model() {
-    command -v curl >/dev/null 2>&1 || return 1
-    curl -fL --connect-timeout 15 --max-time 7200 --retry 2 \
-        -o "${MODEL_FILE}.part" "${MODEL_URL}" || return 1
-    mv "${MODEL_FILE}.part" "${MODEL_FILE}" || return 1
-    return 0
-}
-
-if [ -f "${MODEL_FILE}" ]; then
-    echo "qtrobot-llama-cpp: model already present, skipping download."
-elif download_model; then
-    echo "qtrobot-llama-cpp: model downloaded successfully."
-else
-    rm -f "${MODEL_FILE}.part"
-    echo "qtrobot-llama-cpp: WARNING: could not download the model automatically."
-    echo "qtrobot-llama-cpp: Download it manually and place it at:"
-    echo "qtrobot-llama-cpp:   ${MODEL_FILE}"
-    echo "qtrobot-llama-cpp: URL: ${MODEL_URL}"
-fi
+mkdir -p /opt/luxai/qtrobot_llama_cpp/models
 
 systemctl daemon-reload
 systemctl enable qtrobot-llama-cpp.service
