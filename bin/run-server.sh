@@ -58,7 +58,7 @@ exec /usr/local/bin/llama-server \
     -c "${LLAMA_CTX_SIZE}" \
     -t "${LLAMA_THREADS}" \
     -tb "${LLAMA_BATCH_THREADS}" \
-    --flash-attn \
+    --flash-attn on \
     --special \
     -r "${LLAMA_REVERSE_PROMPT}" \
     ${DRAFT_ARGS} \
