@@ -34,12 +34,22 @@ mkdir -p "${LLAMA_MODEL_DIR}"
 # Main model (required)
 download_if_missing "${LLAMA_MODEL_DIR}/${LLAMA_MODEL}" "${LLAMA_MODEL_URL:-}" || exit 1
 
-# Draft model (optional — skipped entirely if LLAMA_DRAFT_MODEL is unset or empty)
+# Multimodal projection file (optional)
+if [ -n "${LLAMA_MMPROJ:-}" ]; then
+    download_if_missing "${LLAMA_MODEL_DIR}/${LLAMA_MMPROJ}" "${LLAMA_MMPROJ_URL:-}" || exit 1
+fi
+
+# Draft model (optional)
 if [ -n "${LLAMA_DRAFT_MODEL:-}" ]; then
     download_if_missing "${LLAMA_MODEL_DIR}/${LLAMA_DRAFT_MODEL}" "${LLAMA_DRAFT_MODEL_URL:-}" || exit 1
 fi
 
 # Build optional arg groups
+MMPROJ_ARGS=""
+if [ -n "${LLAMA_MMPROJ:-}" ]; then
+    MMPROJ_ARGS="--mmproj ${LLAMA_MODEL_DIR}/${LLAMA_MMPROJ}"
+fi
+
 DRAFT_ARGS=""
 if [ -n "${LLAMA_DRAFT_MODEL:-}" ]; then
     DRAFT_ARGS="--model-draft ${LLAMA_MODEL_DIR}/${LLAMA_DRAFT_MODEL} --spec-type draft-mtp --spec-draft-n-max 3 --spec-draft-p-min 0.40"
@@ -61,5 +71,6 @@ exec /usr/local/bin/llama-server \
     --flash-attn on \
     --special \
     -r "${LLAMA_REVERSE_PROMPT}" \
+    ${MMPROJ_ARGS} \
     ${DRAFT_ARGS} \
     ${WEBUI_ARGS}

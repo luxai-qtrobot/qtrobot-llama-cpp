@@ -13,7 +13,7 @@ REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OUTPUT_DIR="${1:-${SCRIPT_DIR}/dist}"
 
 PKG_NAME="qtrobot-llama-cpp"
-VERSION="1.0.2"
+VERSION="1.0.3"
 ARCH="${ARCH:-$(dpkg --print-architecture)}"
 DEB_NAME="${PKG_NAME}_${VERSION}_${ARCH}.deb"
 
