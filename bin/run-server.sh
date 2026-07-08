@@ -64,6 +64,7 @@ exec /usr/local/bin/llama-server \
     -m "${LLAMA_MODEL_DIR}/${LLAMA_MODEL}" \
     --host "${LLAMA_HOST}" \
     --port "${LLAMA_PORT}" \
+    -np 2 \
     -ngl "${LLAMA_N_GPU_LAYERS}" \
     -c "${LLAMA_CTX_SIZE}" \
     -t "${LLAMA_THREADS}" \
