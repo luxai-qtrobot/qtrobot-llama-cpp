@@ -52,7 +52,7 @@ fi
 
 DRAFT_ARGS=""
 if [ -n "${LLAMA_DRAFT_MODEL:-}" ]; then
-    DRAFT_ARGS="--model-draft ${LLAMA_MODEL_DIR}/${LLAMA_DRAFT_MODEL} --spec-type draft-mtp --spec-draft-n-max 3 --spec-draft-p-min 0.40"
+    DRAFT_ARGS="--model-draft ${LLAMA_MODEL_DIR}/${LLAMA_DRAFT_MODEL} --spec-type draft-mtp --spec-draft-n-max 4"
 fi
 
 WEBUI_ARGS=""
@@ -61,17 +61,17 @@ if [ "${LLAMA_WEBUI:-true}" = "false" ]; then
 fi
 
 exec /usr/local/bin/llama-server \
-    -m "${LLAMA_MODEL_DIR}/${LLAMA_MODEL}" \
     --host "${LLAMA_HOST}" \
     --port "${LLAMA_PORT}" \
-    -np 2 \
-    -ngl "${LLAMA_N_GPU_LAYERS}" \
-    -c "${LLAMA_CTX_SIZE}" \
-    -t "${LLAMA_THREADS}" \
-    -tb "${LLAMA_BATCH_THREADS}" \
-    --flash-attn on \
-    --special \
-    -r "${LLAMA_REVERSE_PROMPT}" \
+    -m "${LLAMA_MODEL_DIR}/${LLAMA_MODEL}" \
     ${MMPROJ_ARGS} \
     ${DRAFT_ARGS} \
+    -ngl "${LLAMA_N_GPU_LAYERS}" \
+    -np 2 \
+    --jinja \
+    -c "${LLAMA_CTX_SIZE}" \
+    --temp 1.0 \
+    --top-p 0.95 \
+    --top-k 64 \
+    --reasoning off \
     ${WEBUI_ARGS}

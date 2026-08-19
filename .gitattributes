@@ -1,0 +1,6 @@
+*.sh text eol=lf
+bin/run-server.sh text eol=lf
+config/server.env text eol=lf
+packaging/postinst text eol=lf
+packaging/prerm text eol=lf
+packaging/*.service text eol=lf

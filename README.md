@@ -3,7 +3,7 @@
 Systemd service package that runs `llama-server` (OpenAI-compatible HTTP API)
 on QTrobot's Jetson AGX Orin. Models are downloaded automatically on first start.
 
-Default model: **Gemma-4-12B-Instruct Q8\_0** + MTP draft (~13 GB + ~1 GB)
+Default model: **Gemma 4 12B IT Q8\_0** with multimodal projection and MTP draft
 
 ## Prerequisites
 
@@ -14,18 +14,20 @@ sudo dpkg -i llama-cpp_<version>_arm64.deb
 sudo apt-get install -f
 ```
 
+The MTP draft model requires a llama.cpp build from after 2026-06-07.
+
 ## Build the .deb
 
 ```bash
 cd qtrobot-llama-cpp
 bash packaging/build-deb.sh
-# produces: packaging/dist/qtrobot-llama-cpp_1.0.2_arm64.deb
+# produces: packaging/dist/qtrobot-llama-cpp_1.0.4_arm64.deb
 ```
 
 ## Install
 
 ```bash
-sudo dpkg -i packaging/dist/qtrobot-llama-cpp_1.0.2_arm64.deb
+sudo dpkg -i packaging/dist/qtrobot-llama-cpp_1.0.4_arm64.deb
 ```
 
 The package installs instantly. On first start, the service downloads the
@@ -55,20 +57,21 @@ sudo systemctl restart qtrobot-llama-cpp
 LLAMA_MODEL_DIR=/opt/luxai/qtrobot_llama_cpp/models
 
 # Main model — filename only, relative to LLAMA_MODEL_DIR
-LLAMA_MODEL=gemma-4-12B-it-Q8_0.gguf
-LLAMA_MODEL_URL=https://huggingface.co/bartowski/gemma-4-12B-it-GGUF/resolve/main/gemma-4-12B-it-Q8_0.gguf
+LLAMA_MODEL=gemma-4-12b-it-Q8_0.gguf
+LLAMA_MODEL_URL=https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/gemma-4-12b-it-Q8_0.gguf
+
+# Multimodal projection file - leave empty to disable image/multimedia support
+LLAMA_MMPROJ=mmproj-BF16.gguf
+LLAMA_MMPROJ_URL=https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/mmproj-BF16.gguf
 
 # Draft model for speculative decoding — leave empty to disable
-LLAMA_DRAFT_MODEL=mtp-gemma-4-12B-it-Q8_0.gguf
-LLAMA_DRAFT_MODEL_URL=https://huggingface.co/bartowski/gemma-4-12B-it-GGUF/resolve/main/mtp-gemma-4-12B-it-Q8_0.gguf
+LLAMA_DRAFT_MODEL=mtp-gemma-4-12b-it.gguf
+LLAMA_DRAFT_MODEL_URL=https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/mtp-gemma-4-12b-it.gguf
 
 LLAMA_HOST=0.0.0.0
 LLAMA_PORT=8080
 LLAMA_N_GPU_LAYERS=999
-LLAMA_CTX_SIZE=4096
-LLAMA_THREADS=8
-LLAMA_BATCH_THREADS=8
-LLAMA_REVERSE_PROMPT='<turn|>'
+LLAMA_CTX_SIZE=65536
 
 # Set to false to disable the built-in web UI
 LLAMA_WEBUI=true
@@ -79,6 +82,12 @@ The new model will be downloaded automatically on next start if not already pres
 
 **To disable speculative decoding:** clear `LLAMA_DRAFT_MODEL=` and restart.
 The `--model-draft` flag is omitted entirely when the draft model is unset.
+
+The default launch uses two parallel slots, Jinja chat templates, a 65,536-token
+context, temperature `1.0`, top-p `0.95`, top-k `64`, and up to four MTP draft
+tokens. Reasoning output is disabled with `--reasoning off`. The main model is
+the Q8\_0 file configured above; the Q4 filename shown in some upstream examples
+is a different quantization.
 
 ## Usage
 
