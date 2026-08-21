@@ -1,98 +1,166 @@
 # qtrobot-llama-cpp
 
-Systemd service package that runs `llama-server` (OpenAI-compatible HTTP API)
-on QTrobot's Jetson AGX Orin. Models are downloaded automatically on first start.
+Systemd service package for running the OpenAI-compatible `llama-server` on
+QTrobot's Jetson AGX Orin. The selected model and its matching vision projector
+and draft model are downloaded automatically on first use.
 
-Default model: **Gemma 4 12B IT Q8\_0** with multimodal projection and MTP draft
+The default preset is **Qwen3.5 9B Q8_0**, selected for responsive multimodal
+conversation, reliable instruction following, and tool calling.
 
 ## Prerequisites
 
-Install the `llama-cpp` binary package first (provides `/usr/local/bin/llama-server`):
+Install the QTrobot `llama-cpp` binary package first. It provides
+`/usr/local/bin/llama-server`:
 
 ```bash
-sudo dpkg -i llama-cpp_<version>_arm64.deb
-sudo apt-get install -f
+sudo apt install ./llama-cpp_<version>_arm64.deb
 ```
 
-The MTP draft model requires a llama.cpp build from after 2026-06-07.
+The optional Qwen3.8 and Gemma presets use MTP speculative decoding and require
+a llama.cpp build from after 2026-06-07.
 
-## Build the .deb
+## Build the Debian package
 
 ```bash
 cd qtrobot-llama-cpp
 bash packaging/build-deb.sh
-# produces: packaging/dist/qtrobot-llama-cpp_1.0.4_arm64.deb
+```
+
+This creates:
+
+```text
+packaging/dist/qtrobot-llama-cpp_1.0.5_arm64.deb
 ```
 
 ## Install
 
 ```bash
-sudo dpkg -i packaging/dist/qtrobot-llama-cpp_1.0.4_arm64.deb
+sudo apt install ./packaging/dist/qtrobot-llama-cpp_1.0.5_arm64.deb
 ```
 
-The package installs instantly. On first start, the service downloads the
-configured models automatically before launching `llama-server`. Watch progress:
+The service starts automatically. On its first start, it downloads only the
+files required by the selected preset. Follow its progress with:
 
 ```bash
 sudo journalctl -u qtrobot-llama-cpp -f
 ```
 
-If a download fails (network issue etc.), the service exits and systemd retries
-after 5 seconds. To stop the retry loop: `sudo systemctl stop qtrobot-llama-cpp`.
+If a download is interrupted, the partial file is removed and systemd retries.
+To stop the retry loop:
 
-> To pre-place models manually (e.g. no internet on the robot), copy them into
-> `/opt/luxai/qtrobot_llama_cpp/models/` before starting the service — the
-> download step is skipped if the file already exists.
+```bash
+sudo systemctl stop qtrobot-llama-cpp
+```
 
-## Configuration
+## Model presets
 
-Edit `/opt/luxai/qtrobot_llama_cpp/etc/server.env` and restart the service to apply:
+| Preset | Main model | Vision projector | Draft model |
+|---|---|---|---|
+| `qwen3.5-9b` (default) | `Qwen3.5-9B-Q8_0.gguf` | `mmproj-qwen3.5-BF16.gguf` | None |
+| `qwen3.8-27b` | `Qwen3.8-27B-Q8_0.gguf` | `mmproj-qwen3.8-BF16.gguf` | `mtp-Qwen3.8-27B-Q4_0.gguf` |
+| `gemma4-12b` | `gemma-4-12b-it-Q8_0.gguf` | `mmproj-gemma4-BF16.gguf` | `mtp-gemma-4-12b-it.gguf` |
+
+Each preset contains the correct download URLs and runtime parameters for that
+model. Projectors have model-specific local filenames because their upstream
+files are all named `mmproj-BF16.gguf` but are not interchangeable.
+
+### Switch models
+
+Edit the service configuration:
+
+```bash
+sudo nano /opt/luxai/qtrobot_llama_cpp/etc/server.env
+```
+
+Change only `LLAMA_MODEL_PRESET`, for example:
+
+```env
+LLAMA_MODEL_PRESET=qwen3.8-27b
+```
+
+Then restart the service:
 
 ```bash
 sudo systemctl restart qtrobot-llama-cpp
+sudo journalctl -u qtrobot-llama-cpp -f
 ```
 
+Missing files for the newly selected preset are downloaded automatically.
+Previously downloaded models remain available, so switching back does not
+download them again.
+
+## Server configuration
+
+The persistent machine configuration is stored at:
+
+```text
+/opt/luxai/qtrobot_llama_cpp/etc/server.env
+```
+
+Its defaults are:
+
 ```env
-# Model directory
+LLAMA_MODEL_PRESET=qwen3.5-9b
 LLAMA_MODEL_DIR=/opt/luxai/qtrobot_llama_cpp/models
-
-# Main model — filename only, relative to LLAMA_MODEL_DIR
-LLAMA_MODEL=gemma-4-12b-it-Q8_0.gguf
-LLAMA_MODEL_URL=https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/gemma-4-12b-it-Q8_0.gguf
-
-# Multimodal projection file - leave empty to disable image/multimedia support
-LLAMA_MMPROJ=mmproj-BF16.gguf
-LLAMA_MMPROJ_URL=https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/mmproj-BF16.gguf
-
-# Draft model for speculative decoding — leave empty to disable
-LLAMA_DRAFT_MODEL=mtp-gemma-4-12b-it.gguf
-LLAMA_DRAFT_MODEL_URL=https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/mtp-gemma-4-12b-it.gguf
 
 LLAMA_HOST=0.0.0.0
 LLAMA_PORT=8080
 LLAMA_N_GPU_LAYERS=999
+LLAMA_N_PARALLEL=2
 LLAMA_CTX_SIZE=65536
-
-# Set to false to disable the built-in web UI
 LLAMA_WEBUI=true
 ```
 
-**To switch models:** update `LLAMA_MODEL`, `LLAMA_MODEL_URL`, and restart.
-The new model will be downloaded automatically on next start if not already present.
+Model-specific definitions are installed under
+`/opt/luxai/qtrobot_llama_cpp/etc/presets/`. They include the model URLs,
+sampling settings, vision projector, optional draft model, and any model-specific
+context settings. Normally, users only need to change the preset selector.
 
-**To disable speculative decoding:** clear `LLAMA_DRAFT_MODEL=` and restart.
-The `--model-draft` flag is omitted entirely when the draft model is unset.
+The Qwen presets use the recommended non-thinking sampling settings:
+temperature `0.7`, top-p `0.8`, top-k `20`, min-p `0.0`, presence penalty
+`1.5`, and repeat penalty `1.0`. Qwen3.5 additionally uses 32 recurrent context
+checkpoints with a minimum step of 512 tokens. Gemma retains its established
+temperature `1.0`, top-p `0.95`, and top-k `64` settings.
 
-The default launch uses two parallel slots, Jinja chat templates, a 65,536-token
-context, temperature `1.0`, top-p `0.95`, top-k `64`, and up to four MTP draft
-tokens. Reasoning output is disabled with `--reasoning off`. The main model is
-the Q8\_0 file configured above; the Q4 filename shown in some upstream examples
-is a different quantization.
+All presets use two parallel slots, Jinja chat templates, a 65,536-token total
+context, full GPU offload, and `--reasoning off`.
+
+## Pre-place models for offline installation
+
+To avoid downloading on the robot, copy the selected preset's files into:
+
+```text
+/opt/luxai/qtrobot_llama_cpp/models/
+```
+
+Stop the service while copying the files, then start it again:
+
+```bash
+sudo systemctl stop qtrobot-llama-cpp
+# Copy the model files into /opt/luxai/qtrobot_llama_cpp/models/
+sudo systemctl start qtrobot-llama-cpp
+```
+
+Use the exact local filenames from the model table. The service skips each file
+that already exists. Do not reuse a projector from another model, even when its
+original download name is also `mmproj-BF16.gguf`.
+
+When upgrading an existing Gemma installation, its generic
+`mmproj-BF16.gguf` may be renamed while the service is stopped, but only when
+that file came from the Unsloth Gemma repository used by this package:
+
+```bash
+sudo mv /opt/luxai/qtrobot_llama_cpp/models/mmproj-BF16.gguf \
+  /opt/luxai/qtrobot_llama_cpp/models/mmproj-gemma4-BF16.gguf
+```
+
+Do not rename a projector downloaded for another Gemma release or repository.
 
 ## Usage
 
 ```bash
 sudo systemctl status qtrobot-llama-cpp
+sudo systemctl restart qtrobot-llama-cpp
 sudo journalctl -u qtrobot-llama-cpp -f
 ```
 
@@ -106,19 +174,21 @@ curl http://localhost:8080/health
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gemma",
+    "model": "local-model",
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 ```
 
-Replace `localhost` with the robot's IP to reach it from another machine.
-The built-in web UI is available at `http://<robot-ip>:8080` when `LLAMA_WEBUI=true`.
+Replace `localhost` with the robot's IP to connect from another machine. The
+built-in web UI is available at `http://<robot-ip>:8080` when
+`LLAMA_WEBUI=true`.
 
 ## Uninstall
 
 ```bash
-sudo apt-get remove qtrobot-llama-cpp
+sudo apt remove qtrobot-llama-cpp
 ```
 
-Model files under `/opt/luxai/qtrobot_llama_cpp/models/` are **not** removed
-automatically — delete them manually if no longer needed.
+Downloaded files under `/opt/luxai/qtrobot_llama_cpp/models/` are intentionally
+kept so they can be reused after reinstalling. Remove them manually only when
+you no longer need them.
