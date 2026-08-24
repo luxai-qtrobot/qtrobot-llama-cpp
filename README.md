@@ -4,8 +4,9 @@ Systemd service package for running the OpenAI-compatible `llama-server` on
 QTrobot's Jetson AGX Orin. The selected model and its matching vision projector
 and draft model are downloaded automatically on first use.
 
-The default preset is **Gemma 4 E4B IT Q8_0**, selected for fast, capable
-multimodal conversation, instruction following, and tool calling.
+The default preset is **Qwen3.5 9B Q8_0**, selected for its strong visual
+understanding, multi-step tool use, instruction following, and interactive
+performance.
 
 ## Prerequisites
 
@@ -29,13 +30,13 @@ bash packaging/build-deb.sh
 This creates:
 
 ```text
-packaging/dist/qtrobot-llama-cpp_1.0.6_arm64.deb
+packaging/dist/qtrobot-llama-cpp_1.0.7_arm64.deb
 ```
 
 ## Install
 
 ```bash
-sudo apt install ./packaging/dist/qtrobot-llama-cpp_1.0.6_arm64.deb
+sudo apt install ./packaging/dist/qtrobot-llama-cpp_1.0.7_arm64.deb
 ```
 
 The service starts automatically. On its first start, it downloads only the
@@ -56,8 +57,8 @@ sudo systemctl stop qtrobot-llama-cpp
 
 | Preset | Main model | Vision projector | Draft model |
 |---|---|---|---|
-| `gemma4-e4b` (default) | `gemma-4-E4B-it-Q8_0.gguf` | `mmproj-gemma-4-E4B-BF16.gguf` | `mtp-gemma-4-E4B-it.gguf` |
-| `qwen3.5-9b` | `Qwen3.5-9B-Q8_0.gguf` | `mmproj-qwen3.5-BF16.gguf` | None |
+| `qwen3.5-9b` (default) | `Qwen3.5-9B-Q8_0.gguf` | `mmproj-qwen3.5-BF16.gguf` | None |
+| `gemma4-e4b` | `gemma-4-E4B-it-Q8_0.gguf` | `mmproj-gemma-4-E4B-BF16.gguf` | `mtp-gemma-4-E4B-it.gguf` |
 | `qwen3.8-27b` | `Qwen3.8-27B-Q8_0.gguf` | `mmproj-qwen3.8-BF16.gguf` | `mtp-Qwen3.8-27B-Q4_0.gguf` |
 | `gemma4-12b` | `gemma-4-12b-it-Q8_0.gguf` | `mmproj-gemma-4-12b-BF16.gguf` | `mtp-gemma-4-12b-it.gguf` |
 
@@ -101,7 +102,7 @@ The persistent machine configuration is stored at:
 Its defaults are:
 
 ```env
-LLAMA_MODEL_PRESET=gemma4-e4b
+LLAMA_MODEL_PRESET=qwen3.5-9b
 LLAMA_MODEL_DIR=/opt/luxai/qtrobot_llama_cpp/models
 
 LLAMA_HOST=0.0.0.0
