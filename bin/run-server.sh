@@ -19,6 +19,9 @@ set +a
 # working when dpkg preserves their existing server.env.
 if [ -z "${LLAMA_MODEL_PRESET:-}" ]; then
     case "${LLAMA_MODEL:-}" in
+        gemma-4-E4B-it-Q8_0.gguf)
+            LLAMA_MODEL_PRESET=gemma4-e4b
+            ;;
         Qwen3.5-9B-Q8_0.gguf)
             LLAMA_MODEL_PRESET=qwen3.5-9b
             ;;
@@ -36,11 +39,11 @@ if [ -z "${LLAMA_MODEL_PRESET:-}" ]; then
 fi
 
 case "${LLAMA_MODEL_PRESET:-}" in
-    qwen3.5-9b|qwen3.8-27b|gemma4-12b)
+    gemma4-e4b|qwen3.5-9b|qwen3.8-27b|gemma4-12b)
         ;;
     *)
         echo "qtrobot-llama-cpp: ERROR: unknown model preset '${LLAMA_MODEL_PRESET:-}'"
-        echo "qtrobot-llama-cpp: Available presets: qwen3.5-9b, qwen3.8-27b, gemma4-12b"
+        echo "qtrobot-llama-cpp: Available presets: gemma4-e4b, qwen3.5-9b, qwen3.8-27b, gemma4-12b"
         exit 1
         ;;
 esac
@@ -127,6 +130,7 @@ set -- "$@" \
     --jinja \
     -c "${LLAMA_CTX_SIZE}"
 
+[ -z "${LLAMA_FLASH_ATTN:-}" ] || set -- "$@" -fa "${LLAMA_FLASH_ATTN}"
 [ -z "${LLAMA_TEMP:-}" ] || set -- "$@" --temp "${LLAMA_TEMP}"
 [ -z "${LLAMA_TOP_P:-}" ] || set -- "$@" --top-p "${LLAMA_TOP_P}"
 [ -z "${LLAMA_TOP_K:-}" ] || set -- "$@" --top-k "${LLAMA_TOP_K}"

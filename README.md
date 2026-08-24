@@ -4,8 +4,8 @@ Systemd service package for running the OpenAI-compatible `llama-server` on
 QTrobot's Jetson AGX Orin. The selected model and its matching vision projector
 and draft model are downloaded automatically on first use.
 
-The default preset is **Qwen3.5 9B Q8_0**, selected for responsive multimodal
-conversation, reliable instruction following, and tool calling.
+The default preset is **Gemma 4 E4B IT Q8_0**, selected for fast, capable
+multimodal conversation, instruction following, and tool calling.
 
 ## Prerequisites
 
@@ -16,7 +16,7 @@ Install the QTrobot `llama-cpp` binary package first. It provides
 sudo apt install ./llama-cpp_<version>_arm64.deb
 ```
 
-The optional Qwen3.8 and Gemma presets use MTP speculative decoding and require
+Gemma 4 E4B, Gemma 4 12B, and Qwen3.8 use MTP speculative decoding and require
 a llama.cpp build from after 2026-06-07.
 
 ## Build the Debian package
@@ -29,13 +29,13 @@ bash packaging/build-deb.sh
 This creates:
 
 ```text
-packaging/dist/qtrobot-llama-cpp_1.0.5_arm64.deb
+packaging/dist/qtrobot-llama-cpp_1.0.6_arm64.deb
 ```
 
 ## Install
 
 ```bash
-sudo apt install ./packaging/dist/qtrobot-llama-cpp_1.0.5_arm64.deb
+sudo apt install ./packaging/dist/qtrobot-llama-cpp_1.0.6_arm64.deb
 ```
 
 The service starts automatically. On its first start, it downloads only the
@@ -56,9 +56,10 @@ sudo systemctl stop qtrobot-llama-cpp
 
 | Preset | Main model | Vision projector | Draft model |
 |---|---|---|---|
-| `qwen3.5-9b` (default) | `Qwen3.5-9B-Q8_0.gguf` | `mmproj-qwen3.5-BF16.gguf` | None |
+| `gemma4-e4b` (default) | `gemma-4-E4B-it-Q8_0.gguf` | `mmproj-gemma-4-E4B-BF16.gguf` | `mtp-gemma-4-E4B-it.gguf` |
+| `qwen3.5-9b` | `Qwen3.5-9B-Q8_0.gguf` | `mmproj-qwen3.5-BF16.gguf` | None |
 | `qwen3.8-27b` | `Qwen3.8-27B-Q8_0.gguf` | `mmproj-qwen3.8-BF16.gguf` | `mtp-Qwen3.8-27B-Q4_0.gguf` |
-| `gemma4-12b` | `gemma-4-12b-it-Q8_0.gguf` | `mmproj-gemma4-BF16.gguf` | `mtp-gemma-4-12b-it.gguf` |
+| `gemma4-12b` | `gemma-4-12b-it-Q8_0.gguf` | `mmproj-gemma-4-12b-BF16.gguf` | `mtp-gemma-4-12b-it.gguf` |
 
 Each preset contains the correct download URLs and runtime parameters for that
 model. Projectors have model-specific local filenames because their upstream
@@ -100,7 +101,7 @@ The persistent machine configuration is stored at:
 Its defaults are:
 
 ```env
-LLAMA_MODEL_PRESET=qwen3.5-9b
+LLAMA_MODEL_PRESET=gemma4-e4b
 LLAMA_MODEL_DIR=/opt/luxai/qtrobot_llama_cpp/models
 
 LLAMA_HOST=0.0.0.0
@@ -119,8 +120,9 @@ context settings. Normally, users only need to change the preset selector.
 The Qwen presets use the recommended non-thinking sampling settings:
 temperature `0.7`, top-p `0.8`, top-k `20`, min-p `0.0`, presence penalty
 `1.5`, and repeat penalty `1.0`. Qwen3.5 additionally uses 32 recurrent context
-checkpoints with a minimum step of 512 tokens. Gemma retains its established
-temperature `1.0`, top-p `0.95`, and top-k `64` settings.
+checkpoints with a minimum step of 512 tokens. Both Gemma presets use
+temperature `1.0`, top-p `0.95`, and top-k `64`. Gemma 4 E4B also disables
+Flash Attention for MTP compatibility.
 
 All presets use two parallel slots, Jinja chat templates, a 65,536-token total
 context, full GPU offload, and `--reasoning off`.
@@ -145,13 +147,12 @@ Use the exact local filenames from the model table. The service skips each file
 that already exists. Do not reuse a projector from another model, even when its
 original download name is also `mmproj-BF16.gguf`.
 
-When upgrading an existing Gemma installation, its generic
-`mmproj-BF16.gguf` may be renamed while the service is stopped, but only when
-that file came from the Unsloth Gemma repository used by this package:
+When upgrading from package 1.0.5, its Gemma 4 12B projector may be renamed to
+the new consistent filename while the service is stopped:
 
 ```bash
-sudo mv /opt/luxai/qtrobot_llama_cpp/models/mmproj-BF16.gguf \
-  /opt/luxai/qtrobot_llama_cpp/models/mmproj-gemma4-BF16.gguf
+sudo mv /opt/luxai/qtrobot_llama_cpp/models/mmproj-gemma4-BF16.gguf \
+  /opt/luxai/qtrobot_llama_cpp/models/mmproj-gemma-4-12b-BF16.gguf
 ```
 
 Do not rename a projector downloaded for another Gemma release or repository.
