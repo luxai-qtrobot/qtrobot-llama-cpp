@@ -31,6 +31,9 @@ if [ -z "${LLAMA_MODEL_PRESET:-}" ]; then
         gemma-4-12b-it-Q8_0.gguf|gemma-4-12B-it-Q8_0.gguf)
             LLAMA_MODEL_PRESET=gemma4-12b
             ;;
+        gemma-4-26B-A4B-it-UD-Q4_K_M.gguf)
+            LLAMA_MODEL_PRESET=gemma4-26b-a4b
+            ;;
     esac
 
     if [ -n "${LLAMA_MODEL_PRESET:-}" ]; then
@@ -39,11 +42,11 @@ if [ -z "${LLAMA_MODEL_PRESET:-}" ]; then
 fi
 
 case "${LLAMA_MODEL_PRESET:-}" in
-    gemma4-e4b|qwen3.5-9b|qwen3.8-27b|gemma4-12b)
+    gemma4-e4b|qwen3.5-9b|qwen3.8-27b|gemma4-12b|gemma4-26b-a4b)
         ;;
     *)
         echo "qtrobot-llama-cpp: ERROR: unknown model preset '${LLAMA_MODEL_PRESET:-}'"
-        echo "qtrobot-llama-cpp: Available presets: gemma4-e4b, qwen3.5-9b, qwen3.8-27b, gemma4-12b"
+        echo "qtrobot-llama-cpp: Available presets: gemma4-e4b, qwen3.5-9b, qwen3.8-27b, gemma4-12b, gemma4-26b-a4b"
         exit 1
         ;;
 esac

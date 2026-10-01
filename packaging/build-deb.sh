@@ -56,7 +56,7 @@ Description: QTrobot LLM service — llama.cpp server wrapper
  with sensible defaults for the Jetson AGX Orin.
  .
  Default model: Qwen3.5 9B Q8_0 with multimodal projection.
- Optional presets: Gemma 4 E4B, Gemma 4 12B, and Qwen3.8 27B.
+ Optional presets: Gemma 4 E4B, Gemma 4 12B, Gemma 4 26B A4B, and Qwen3.8 27B.
  Config: ${PREFIX}/etc/server.env
  .
  Requires llama-server in /usr/local/bin (install llama-cpp first).

@@ -17,8 +17,8 @@ Install the QTrobot `llama-cpp` binary package first. It provides
 sudo apt install ./llama-cpp_<version>_arm64.deb
 ```
 
-Gemma 4 E4B, Gemma 4 12B, and Qwen3.8 use MTP speculative decoding and require
-a llama.cpp build from after 2026-06-07.
+Gemma 4 E4B, Gemma 4 12B, Gemma 4 26B A4B, and Qwen3.8 use MTP speculative
+decoding and require a llama.cpp build from after 2026-06-07.
 
 ## Build the Debian package
 
@@ -61,6 +61,7 @@ sudo systemctl stop qtrobot-llama-cpp
 | `gemma4-e4b` | `gemma-4-E4B-it-Q8_0.gguf` | `mmproj-gemma-4-E4B-BF16.gguf` | `mtp-gemma-4-E4B-it.gguf` |
 | `qwen3.8-27b` | `Qwen3.8-27B-Q8_0.gguf` | `mmproj-qwen3.8-BF16.gguf` | `mtp-Qwen3.8-27B-Q4_0.gguf` |
 | `gemma4-12b` | `gemma-4-12b-it-Q8_0.gguf` | `mmproj-gemma-4-12b-BF16.gguf` | `mtp-gemma-4-12b-it.gguf` |
+| `gemma4-26b-a4b` | `gemma-4-26B-A4B-it-UD-Q4_K_M.gguf` | `mmproj-gemma-4-26B-BF16.gguf` | `mtp-gemma-4-26B-A4B-it.gguf` |
 
 Each preset contains the correct download URLs and runtime parameters for that
 model. Projectors have model-specific local filenames because their upstream
@@ -121,7 +122,7 @@ context settings. Normally, users only need to change the preset selector.
 The Qwen presets use the recommended non-thinking sampling settings:
 temperature `0.7`, top-p `0.8`, top-k `20`, min-p `0.0`, presence penalty
 `1.5`, and repeat penalty `1.0`. Qwen3.5 additionally uses 32 recurrent context
-checkpoints with a minimum step of 512 tokens. Both Gemma presets use
+checkpoints with a minimum step of 512 tokens. The Gemma presets use
 temperature `1.0`, top-p `0.95`, and top-k `64`. Gemma 4 E4B also disables
 Flash Attention for MTP compatibility.
 
